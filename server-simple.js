@@ -548,22 +548,8 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, '0.0.0.0', () => {
-  //console.log(`Server listening on http://0.0.0.0:${PORT}`);
+  console.log(`NearbyChat Server started on http://0.0.0.0:${PORT}`);
+  console.log('Test OTP: 123456');
+  console.log('This is the simplified version (in-memory DB). Data resets on restart.');
 });
-//
-╔══════════════════════════════════════════════════════╗
-║           🚀 NearbyChat Server Started 🚀            ║
-╠══════════════════════════════════════════════════════╣
-║                                                      ║
-║   HTTP API:    http://localhost:${PORT}                 ║
-║   WebSocket:   ws://localhost:${PORT}                   ║
-║   Health:      http://localhost:${PORT}/health          ║
-║                                                      ║
-║   📱 Test OTP: 123456                                ║
-║                                                      ║
-║   This is the simplified version (in-memory DB).     ║
-║   Data resets when server restarts.                  ║
-║                                                      ║
-╚══════════════════════════════════════════════════════╝
-  `)
-});
+
