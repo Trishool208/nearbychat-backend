@@ -14,10 +14,20 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] }
+  cors: { origin: "*" },
+  transports: ['websocket'],  // <-- Add this line
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.use(cors());
