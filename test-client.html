@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NearbyChat - Web Test Client</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; color: #6366f1; }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 16px; margin-bottom: 15px; color: #94a3b8; }
+    input, button {
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+    }
+    input {
+      background: #334155;
+      color: white;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    input::placeholder { color: #64748b; }
+    button {
+      background: #6366f1;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4f46e5; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    .btn-secondary { background: #334155; }
+    .btn-secondary:hover { background: #475569; }
+    .row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .row input { flex: 1; margin-bottom: 0; }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+    .status.connected { background: #22c55e33; color: #22c55e; }
+    .status.disconnected { background: #ef444433; color: #ef4444; }
+    .chat-box {
+      height: 300px;
+      overflow-y: auto;
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 10px 15px;
+      border-radius: 12px;
+      max-width: 70%;
+    }
+    .message.sent {
+      background: #6366f1;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+    .message.received {
+      background: #334155;
+      border-bottom-left-radius: 4px;
+    }
+    .message .sender {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 4px;
+    }
+    .message .time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      text-align: right;
+      margin-top: 4px;
+    }
+    .typing {
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 12px;
+      padding: 5px 0;
+    }
+    .log {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-entry { margin: 3px 0; color: #94a3b8; }
+    .log-entry.success { color: #22c55e; }
+    .log-entry.error { color: #ef4444; }
+    .log-entry.info { color: #3b82f6; }
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #334155;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .user-card:hover { background: #475569; }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #6366f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .user-info { flex: 1; }
+    .user-name { font-weight: 500; }
+    .user-distance { font-size: 12px; color: #94a3b8; }
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab {
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #334155;
+    }
+    .tab.active { background: #6366f1; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🗺️ NearbyChat Test Client</h1>
+    
+    <!-- Auth Section -->
+    <div class="card" id="auth-card">
+      <h2>1️⃣ AUTHENTICATION</h2>
+      <div class="row">
+        <input type="text" id="phone" placeholder="Phone number (e.g., 9876543210)" value="9876543210">
+        <button onclick="requestOtp()">Get OTP</button>
+      </div>
+      <div class="row">
+        <input type="text" id="otp" placeholder="OTP (use 123456 for testing)" value="123456">
+        <button onclick="verifyOtp()">Verify</button>
+      </div>
+      <div id="auth-status"></div>
+    </div>
+    
+    <!-- User Info -->
+    <div class="card hidden" id="user-card">
+      <h2>👤 LOGGED IN AS <span class="status connected" id="connection-status">Connecting...</span></h2>
+      <p><strong>Username:</strong> <span id="username">-</span></p>
+      <p><strong>Karma:</strong> <span id="karma">-</span></p>
+      <div class="row" style="margin-top: 15px;">
+        <input type="text" id="new-username" placeholder="New username">
+        <button onclick="updateUsername()">Update</button>
+      </div>
+    </div>
+    
+    <!-- Location & Discovery -->
+    <div class="card hidden" id="location-card">
+      <h2>📍 LOCATION & DISCOVERY</h2>
+      <div class="row">
+        <input type="text" id="latitude" placeholder="Latitude" value="19.0760">
+        <input type="text" id="longitude" placeholder="Longitude" value="72.8777">
+        <button onclick="updateLocation()">Update Location</button>
+      </div>
+      <div class="row">
+        <input type="text" id="radius" placeholder="Radius (meters)" value="5000">
+        <button onclick="findNearby()">Find Nearby</button>
+      </div>
+      <div id="nearby-users" style="margin-top: 15px;"></div>
+    </div>
+    
+    <!-- Chat Section -->
+    <div class="card hidden" id="chat-card">
+      <h2>💬 CHAT <span id="chat-with"></span></h2>
+      <div class="chat-box" id="chat-box"></div>
+      <div class="typing hidden" id="typing-indicator">Someone is typing...</div>
+      <div class="row">
+        <input type="text" id="message" placeholder="Type a message..." onkeypress="handleKeyPress(event)" oninput="handleTyping()">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+    
+    <!-- Debug Log -->
+    <div class="card">
+      <h2>📋 DEBUG LOG</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+    let token = null;
+    let userId = null;
+    let currentConversation = null;
+    let socket = null;
+    let typingTimeout = null;
+    
+    // Logging
+    function log(message, type = '') {
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    // API helper
+    async function api(method, endpoint, body = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const options = { method, headers };
+      if (body) options.body = JSON.stringify(body);
+      
+      const res = await fetch(`${API_URL}${endpoint}`, options);
+      return res.json();
+    }
+    
+    // Auth functions
+    async function requestOtp() {
+      const phone = document.getElementById('phone').value;
+      const data = await api('POST', '/api/auth/request-otp', { phone });
+      log(`OTP requested for ${phone}: ${data.dev_otp}`, 'success');
+    }
+    
+    async function verifyOtp() {
+      const phone = document.getElementById('phone').value;
+      const otp = document.getElementById('otp').value;
+      
+      const data = await api('POST', '/api/auth/verify-otp', { phone, otp });
+      
+      if (data.success) {
+        token = data.token;
+        userId = data.user.id;
+        
+        document.getElementById('username').textContent = data.user.username;
+        document.getElementById('karma').textContent = data.user.karmaScore;
+        
+        document.getElementById('auth-card').classList.add('hidden');
+        document.getElementById('user-card').classList.remove('hidden');
+        document.getElementById('location-card').classList.remove('hidden');
+        
+        log(`Logged in as ${data.user.username}`, 'success');
+        
+        // Connect socket
+        connectSocket();
+      } else {
+        log(`Login failed: ${data.error}`, 'error');
+      }
+    }
+    
+    // Socket connection
+    function connectSocket() {
+      socket = io(API_URL);
+      
+      socket.on('connect', () => {
+        log('Socket connected', 'success');
+        document.getElementById('connection-status').textContent = 'Connected';
+        document.getElementById('connection-status').className = 'status connected';
+        
+        // Authenticate
+        socket.emit('authenticate', token);
+      });
+      
+      socket.on('authenticated', () => {
+        log('Socket authenticated', 'success');
+      });
+      
+      socket.on('disconnect', () => {
+        log('Socket disconnected', 'error');
+        document.getElementById('connection-status').textContent = 'Disconnected';
+        document.getElementById('connection-status').className = 'status disconnected';
+      });
+      
+      socket.on('new_message', (message) => {
+        log(`New message from ${message.senderUsername}`, 'info');
+        addMessageToChat(message);
+      });
+      
+      socket.on('user_typing', ({ username }) => {
+        document.getElementById('typing-indicator').textContent = `${username} is typing...`;
+        document.getElementById('typing-indicator').classList.remove('hidden');
+      });
+      
+      socket.on('user_stop_typing', () => {
+        document.getElementById('typing-indicator').classList.add('hidden');
+      });
+    }
+    
+    // Location functions
+    async function updateLocation() {
+      const lat = parseFloat(document.getElementById('latitude').value);
+      const lng = parseFloat(document.getElementById('longitude').value);
+      
+      await api('POST', '/api/users/location', { latitude: lat, longitude: lng });
+      log(`Location updated: ${lat}, ${lng}`, 'success');
+    }
+    
+    async function findNearby() {
+      const lat = document.getElementById('latitude').value;
+      const lng = document.getElementById('longitude').value;
+      const radius = document.getElementById('radius').value;
+      
+      const data = await api('GET', `/api/match/nearby?latitude=${lat}&longitude=${lng}&radius=${radius}`);
+      
+      const container = document.getElementById('nearby-users');
+      container.innerHTML = '';
+      
+      if (data.users.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8;">No users found nearby. Try increasing the radius.</p>';
+        log('No nearby users found', 'info');
+        return;
+      }
+      
+      data.users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.onclick = () => startChat(user.id, user.username);
+        card.innerHTML = `
+          <div class="avatar">${user.username[0].toUpperCase()}</div>
+          <div class="user-info">
+            <div class="user-name">${user.username}</div>
+            <div class="user-distance">${user.distanceText} • ⭐ ${user.karmaScore}</div>
+          </div>
+          ${user.isOnline ? '<div class="online-dot"></div>' : ''}
+        `;
+        container.appendChild(card);
+      });
+      
+      log(`Found ${data.users.length} nearby users`, 'success');
+    }
+    
+    // Chat functions
+    async function startChat(targetUserId, username) {
+      const data = await api('POST', '/api/match/start-chat', { targetUserId });
+      currentConversation = data.conversationId;
+      
+      document.getElementById('chat-with').textContent = `with ${username}`;
+      document.getElementById('chat-card').classList.remove('hidden');
+      document.getElementById('chat-box').innerHTML = '';
+      
+      // Join socket room
+      socket.emit('join_conversation', { conversationId: currentConversation });
+      
+      // Load existing messages
+      const convData = await api('GET', `/api/match/conversation/${currentConversation}`);
+      convData.messages.forEach(msg => addMessageToChat({...msg, isMe: msg.senderId === userId}));
+      
+      log(`Started chat with ${username}`, 'success');
+    }
+    
+    function addMessageToChat(message) {
+      const chatBox = document.getElementById('chat-box');
+      const isMe = message.senderId === userId || message.isMe;
+      
+      const msgEl = document.createElement('div');
+      msgEl.className = `message ${isMe ? 'sent' : 'received'}`;
+      msgEl.innerHTML = `
+        ${!isMe ? `<div class="sender">${message.senderUsername}</div>` : ''}
+        <div>${message.content}</div>
+        <div class="time">${new Date(message.createdAt).toLocaleTimeString()}</div>
+      `;
+      chatBox.appendChild(msgEl);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
+    function sendMessage() {
+      const input = document.getElementById('message');
+      const content = input.value.trim();
+      
+      if (!content || !currentConversation) return;
+      
+      socket.emit('send_message', {
+        conversationId: currentConversation,
+        content,
+        messageType: 'text'
+      });
+      
+      input.value = '';
+      socket.emit('stop_typing', { conversationId: currentConversation });
+    }
+    
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') sendMessage();
+    }
+    
+    function handleTyping() {
+      if (!currentConversation) return;
+      
+      socket.emit('typing', { conversationId: currentConversation });
+      
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socket.emit('stop_typing', { conversationId: currentConversation });
+      }, 2000);
+    }
+    
+    async function updateUsername() {
+      const newUsername = document.getElementById('new-username').value;
+      const data = await api('POST', '/api/users/username', { username: newUsername });
+      
+      if (data.success) {
+        document.getElementById('username').textContent = data.username;
+        log(`Username updated to ${data.username}`, 'success');
+      } else {
+        log(`Failed: ${data.error}`, 'error');
+      }
+    }
+    
+    log('Ready! Enter phone number and click "Get OTP"', 'info');
+  </script>
+</body>
+</html>
