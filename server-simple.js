@@ -14,6 +14,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
+console.log('🚀 Starting NearbyChat backend...');
+
+
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);
 });
@@ -545,11 +548,15 @@ app.get('/', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`NearbyChat Server started on http://0.0.0.0:${PORT}`);
-  console.log('Test OTP: 123456');
-  console.log('This is the simplified version (in-memory DB). Data resets on restart.');
+if (!PORT) {
+  console.error('❌ PORT not provided by environment');
+  process.exit(1);
+}
+
+server.listen(PORT, () => {
+  console.log(`✅ NearbyChat Server listening on port ${PORT}`);
 });
+
 
