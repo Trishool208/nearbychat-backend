@@ -2,10 +2,10 @@
   "name": "nearbychat-backend",
   "version": "1.0.0",
   "description": "NearbyChat - Hyper-local stranger chat backend",
-  "main": "src/server.js",
+  "main": "server-simple.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node server-simple.js",
+    "dev": "nodemon server-simple.js",
     "test": "jest"
   },
   "dependencies": {
