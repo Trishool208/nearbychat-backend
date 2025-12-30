@@ -27,8 +27,14 @@ process.on('unhandledRejection', (reason, promise) => {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
-  transports: ['websocket'],  // <-- Add this line
+  cors: { 
+    origin: "*", 
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
+});  transports: ['websocket'],  // <-- Add this line
   pingTimeout: 60000,
   pingInterval: 25000
 });
