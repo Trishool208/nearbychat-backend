@@ -34,10 +34,7 @@ const io = new Server(server, {
   },
   transports: ['websocket', 'polling'],
   allowEIO3: true
-});  transports: ['websocket'],  // <-- Add this line
-  pingTimeout: 60000,
-  pingInterval: 25000
-});
+}); 
 
 app.use(cors());
 app.use(express.json());
