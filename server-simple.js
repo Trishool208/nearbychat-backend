@@ -14,16 +14,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
-console.log('🚀 Starting NearbyChat backend...');
-
-
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION:', err);
-});
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('UNHANDLED REJECTION:', reason);
-});
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -34,7 +24,7 @@ const io = new Server(server, {
   },
   transports: ['websocket', 'polling'],
   allowEIO3: true
-}); 
+});
 
 app.use(cors());
 app.use(express.json());
@@ -551,15 +541,23 @@ app.get('/', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT;
-
-if (!PORT) {
-  console.error('❌ PORT not provided by environment');
-  process.exit(1);
-}
+const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`✅ NearbyChat Server listening on port ${PORT}`);
+  console.log(`
+╔══════════════════════════════════════════════════════╗
+║           🚀 NearbyChat Server Started 🚀            ║
+╠══════════════════════════════════════════════════════╣
+║                                                      ║
+║   HTTP API:    http://localhost:${PORT}                 ║
+║   WebSocket:   ws://localhost:${PORT}                   ║
+║   Health:      http://localhost:${PORT}/health          ║
+║                                                      ║
+║   📱 Test OTP: 123456                                ║
+║                                                      ║
+║   This is the simplified version (in-memory DB).     ║
+║   Data resets when server restarts.                  ║
+║                                                      ║
+╚══════════════════════════════════════════════════════╝
+  `);
 });
-
-
